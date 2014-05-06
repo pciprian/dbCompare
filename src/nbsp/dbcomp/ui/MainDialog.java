@@ -3,6 +3,7 @@ package nbsp.dbcomp.ui;
 import nbsp.dbcomp.bus.EventDispatcher;
 import nbsp.dbcomp.bus.EventHandler;
 import nbsp.dbcomp.events.ExitEvent;
+import nbsp.dbcomp.model.DbConnectionConfigInfo;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
@@ -14,12 +15,21 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
+/**
+ * @author pciprian
+ *
+ */
 public class MainDialog {
 	private Shell shell;
+	private DbConnectionConfigInfo sourceDbConfig;
+	private DbConnectionConfigInfo destinationDbConfig;
 	
-	public MainDialog() {		
+	public MainDialog() {
+		sourceDbConfig = new DbConnectionConfigInfo();
+		destinationDbConfig = new DbConnectionConfigInfo();
 	}
 	
 	@EventHandler
@@ -76,7 +86,7 @@ public class MainDialog {
 		
 		Button btnExit = new Button(grpMainBar, SWT.PUSH);
 		btnExit.setText("Exit");
-		FormData btnExitData = new FormData(40, 20);
+		FormData btnExitData = new FormData();
 		btnExitData.right = new FormAttachment(100,0);
 		btnExit.setLayoutData(btnExitData);
 		btnExit.addSelectionListener( new SelectionListener() {
@@ -89,6 +99,35 @@ public class MainDialog {
 				// do nothing				
 			}			
 		});
+		
+		Label sourceDbLabel = new Label(grpMainBar, SWT.LEFT);
+		sourceDbLabel.setText("Source database");
+		FormData sourceDbLabelData = new FormData();
+		sourceDbLabelData.left = new FormAttachment(0, 0);
+		sourceDbLabelData.top = new FormAttachment(0, 0);
+		sourceDbLabel.setLayoutData(sourceDbLabelData);
+		
+		Label destinationDbLabel = new Label(grpMainBar, SWT.LEFT);
+		destinationDbLabel.setText("Destination database");
+		FormData destinationDbLabelData = new FormData();
+		destinationDbLabelData.left = new FormAttachment(0, 0);
+		destinationDbLabelData.top = new FormAttachment(sourceDbLabel, 10);
+		destinationDbLabel.setLayoutData(destinationDbLabelData);
+		
+		Button sourceDbConfigButton = new Button(grpMainBar, SWT.PUSH);
+		sourceDbConfigButton.setText("Config");
+		FormData sourceDbConfigButtonData = new FormData();
+		sourceDbConfigButtonData.left = new FormAttachment(0, 140);
+		sourceDbConfigButtonData.top = new FormAttachment(0, -5);
+		sourceDbConfigButton.setLayoutData(sourceDbConfigButtonData);
+		
+		Button destinationDbConfigButton = new Button(grpMainBar, SWT.PUSH);
+		destinationDbConfigButton.setText("Config");
+		FormData destinationDbConfigButtonData = new FormData();
+		destinationDbConfigButtonData.left = new FormAttachment(0, 140);
+		destinationDbConfigButtonData.top = new FormAttachment(sourceDbConfigButton, 0);
+		destinationDbConfigButton.setLayoutData(destinationDbConfigButtonData);
+		
 		
 	}	
 }
