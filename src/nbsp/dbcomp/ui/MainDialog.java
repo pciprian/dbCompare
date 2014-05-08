@@ -2,6 +2,8 @@ package nbsp.dbcomp.ui;
 
 import nbsp.dbcomp.bus.EventDispatcher;
 import nbsp.dbcomp.bus.EventHandler;
+import nbsp.dbcomp.events.DbConfigChangedEvent;
+import nbsp.dbcomp.events.DbConfigChangedEvent.Database;
 import nbsp.dbcomp.events.ExitEvent;
 import nbsp.dbcomp.model.DbConnectionConfigInfo;
 
@@ -128,6 +130,39 @@ public class MainDialog {
 		destinationDbConfigButtonData.top = new FormAttachment(sourceDbConfigButton, 0);
 		destinationDbConfigButton.setLayoutData(destinationDbConfigButtonData);
 		
+		sourceDbConfigButton.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				DbConnectionConfigDialog sDialog = new DbConnectionConfigDialog(shell);
+				sDialog.setConfigInfo(sourceDbConfig);
+				sDialog.show();
+				if (sDialog.hasChanged()) {
+					sourceDbConfig = sDialog.getConfigInfo();
+					EventDispatcher.getInstance().publish(new DbConfigChangedEvent(Database.Source));
+				}
+			}			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				// do nothing				
+			}
+		});
+		
+		destinationDbConfigButton.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				DbConnectionConfigDialog dDialog = new DbConnectionConfigDialog(shell);
+				dDialog.setConfigInfo(destinationDbConfig);
+				dDialog.show();
+				if (dDialog.hasChanged()) {
+					destinationDbConfig = dDialog.getConfigInfo();
+					EventDispatcher.getInstance().publish(new DbConfigChangedEvent(Database.Destination));
+				}
+			}			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				// do nothing				
+			}
+		});
 		
 	}	
 }

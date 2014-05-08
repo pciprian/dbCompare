@@ -18,29 +18,55 @@ public class DbConnectionConfigInfo {
 	private String user;
 	private String pass;
 	
+	public DbConnectionConfigInfo() {
+		this.host = "";
+		this.port = "";
+		this.user = "";
+		this.pass = "";
+	}
+	
 	public String getHost() {
 		return host;
 	}
 	public void setHost(String host) {
-		this.host = host;
+		if (host == null) {
+			this.host = "";
+		} else {
+			this.host = host;
+		}
 	}
+	
 	public String getPort() {
 		return port;
 	}
 	public void setPort(String port) {
-		this.port = port;
+		if (port == null) {
+			this.port = "";
+		} else {
+			this.port = port;
+		}
 	}
+	
 	public String getUser() {
 		return user;
 	}
 	public void setUser(String user) {
-		this.user = user;
+		if (user == null) {
+			this.user = "";
+		} else {
+			this.user = user;
+		}
 	}
+	
 	public String getPass() {
 		return pass;
 	}
 	public void setPass(String pass) {
-		this.pass = pass;
+		if (pass == null) {
+			this.pass = "";
+		} else {
+			this.pass = pass;
+		}
 	}
 	
 	public String getDriverName() {
