@@ -17,6 +17,7 @@ public class DbConnectionConfigInfo {
 	private String port;
 	private String user;
 	private String pass;
+	private boolean validConnection;
 	
 	public DbConnectionConfigInfo() {
 		this.host = "";
@@ -67,6 +68,14 @@ public class DbConnectionConfigInfo {
 		} else {
 			this.pass = pass;
 		}
+	}
+
+	public boolean isValidConnection() {
+		return validConnection;
+	}
+
+	public void setValidConnection(boolean validConnection) {
+		this.validConnection = validConnection;
 	}
 	
 	public String getDriverName() {

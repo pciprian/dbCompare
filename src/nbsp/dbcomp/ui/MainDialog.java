@@ -69,7 +69,7 @@ public class MainDialog {
 		shell.setLayout(formLayout);
 		
 		createMainBar(shell);
-		
+		createDetailPanels(shell);
 	}
 	
 	private void createMainBar(Composite parent) {
@@ -130,6 +130,24 @@ public class MainDialog {
 		destinationDbConfigButtonData.top = new FormAttachment(sourceDbConfigButton, 0);
 		destinationDbConfigButton.setLayoutData(destinationDbConfigButtonData);
 		
+		Label sourceDbConnectionDesc = new Label(grpMainBar, SWT.LEFT);
+		sourceDbConnectionDesc.setText("No connection info");
+		FormData sourceDbConnectionDescData = new FormData();
+		sourceDbConnectionDescData.left = new FormAttachment(0, 200);
+		sourceDbConnectionDescData.top = new FormAttachment(0, 0);
+		sourceDbConnectionDesc.setLayoutData(sourceDbConnectionDescData);
+		EventDispatcher.getInstance().registerHandlers(
+				new DbDescriptionLabel(sourceDbConnectionDesc, Database.Source));
+		
+		Label destinationDbConnectionDesc = new Label(grpMainBar, SWT.LEFT);
+		destinationDbConnectionDesc.setText("No connection info");
+		FormData destinationDbConnectionDescData = new FormData();
+		destinationDbConnectionDescData.left = new FormAttachment(0, 200);
+		destinationDbConnectionDescData.top = new FormAttachment(sourceDbConnectionDesc, 10);
+		destinationDbConnectionDesc.setLayoutData(destinationDbConnectionDescData);
+		EventDispatcher.getInstance().registerHandlers(
+				new DbDescriptionLabel(destinationDbConnectionDesc, Database.Destination));
+		
 		sourceDbConfigButton.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -164,5 +182,47 @@ public class MainDialog {
 			}
 		});
 		
-	}	
+	}
+	
+	private void createDetailPanels(Composite parent) {
+		
+		DbDetailsPanelComponent sourcePanel = new DbDetailsPanelComponent(parent, Database.Source);
+		FormData sourcePanelData = new FormData();
+		sourcePanelData.top = new FormAttachment(0, 80);
+		sourcePanelData.left = new FormAttachment(0, 0);
+		sourcePanelData.right = new FormAttachment(50, -5);
+		sourcePanelData.bottom = new FormAttachment(100,0);
+		sourcePanel.setLayoutData(sourcePanelData);
+		
+		DbDetailsPanelComponent destinationPanel = new DbDetailsPanelComponent(parent, Database.Destination);
+		FormData destinationPanelData = new FormData();
+		destinationPanelData.top = new FormAttachment(0, 80);
+		destinationPanelData.left = new FormAttachment(50, 5);
+		destinationPanelData.right = new FormAttachment(100,0);
+		destinationPanelData.bottom = new FormAttachment(100,0);
+		destinationPanel.setLayoutData(destinationPanelData);
+	}
+	
+	public class DbDescriptionLabel {
+		
+		private String DB_CONNECT_INFO_FORMAT = "Connection to host %s:%s - user: %s"; 
+		private Label labelToUpdate;	
+		private Database database;
+		
+		public DbDescriptionLabel(Label labelToUpdate, Database database) {
+			this.labelToUpdate = labelToUpdate;
+			this.database = database;
+		}
+		
+		@EventHandler
+		public void handleLabelUpdate(DbConfigChangedEvent event) {
+			if (!labelToUpdate.isDisposed() && database == event.getDatabaseType()) {
+				DbConnectionConfigInfo dbInfo = (event.getDatabaseType() == Database.Source)? sourceDbConfig : destinationDbConfig;
+				labelToUpdate.setText(String.format(DB_CONNECT_INFO_FORMAT, dbInfo.getHost(), dbInfo.getPort(), dbInfo.getUser()));
+				labelToUpdate.redraw();
+				labelToUpdate.update();
+				labelToUpdate.getParent().layout();
+			}
+		}
+	}
 }

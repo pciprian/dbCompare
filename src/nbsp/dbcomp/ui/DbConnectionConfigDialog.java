@@ -36,6 +36,7 @@ public class DbConnectionConfigDialog extends Dialog {
 	private Text inputUser;
 	private Text inputPass;
 	private boolean changed;
+	private boolean validConnection;
 	
 	public DbConnectionConfigDialog(Shell parent) {
 		super(parent);
@@ -48,6 +49,7 @@ public class DbConnectionConfigDialog extends Dialog {
 
 	public void setConfigInfo(DbConnectionConfigInfo configInfo) {
 		this.configInfo = configInfo;
+		this.validConnection = configInfo.isValidConnection();
 		if (this.inputHost != null && !this.inputHost.isDisposed()) {
 			this.inputHost.setText(this.configInfo.getHost());
 		}
@@ -187,6 +189,7 @@ public class DbConnectionConfigDialog extends Dialog {
 				if (!inputPass.isDisposed()) {
 					inputPass.setText(configInfo.getPass());
 				}
+				validConnection = configInfo.isValidConnection();
 				if (!localShell.isDisposed()) {
 					localShell.close();
 				}
@@ -227,9 +230,10 @@ public class DbConnectionConfigDialog extends Dialog {
 					configInfo.setPass(inputPass.getText());
 				}
 				if (!testDatabaseConnectivity()) {
-					// need an error message here
+					// TODO need an error message here
 					return;
-				}				
+				}
+				configInfo.setValidConnection(true);
 				if (!localShell.isDisposed()) {
 					localShell.close();
 				}
