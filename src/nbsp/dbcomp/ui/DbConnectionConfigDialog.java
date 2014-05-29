@@ -254,10 +254,10 @@ public class DbConnectionConfigDialog extends Dialog {
 			connected = true;
 			connection.close();
 		} catch (ClassNotFoundException e) {
-			
+			// TODO
 			e.printStackTrace();
 		} catch (SQLException e) {
-			
+			// TODO
 			e.printStackTrace();
 		}
 	    return connected;

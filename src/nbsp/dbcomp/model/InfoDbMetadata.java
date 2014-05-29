@@ -19,9 +19,9 @@ public class InfoDbMetadata {
 		return tables;
 	}
 	
-	public void readDbInfo( Connection conn ) {
+	public void readDbInfo(Connection connection) {
 		try {
-			DatabaseMetaData dmd = conn.getMetaData();
+			DatabaseMetaData dmd = connection.getMetaData();
 			ResultSet rsTables = dmd.getTables(null, null, "%", new String[] { "TABLE" } );
 			while( rsTables.next() ) {
 				String tbName = rsTables.getString( "TABLE_NAME" );

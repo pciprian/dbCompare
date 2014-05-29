@@ -1,6 +1,8 @@
 package nbsp.dbcomp.ui;
 
 import nbsp.dbcomp.events.DbConfigChangedEvent.Database;
+import nbsp.dbcomp.model.DbConnectionConfigInfo;
+import nbsp.dbcomp.model.InfoDbMetadata;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Rectangle;
@@ -20,6 +22,7 @@ public class DbDetailsPanelComponent extends Composite {
 	private Group grpMainInfo;
 	private Table masterTable;
 	private Table slaveTable;
+	private InfoDbMetadata metadata;
 	
 	public DbDetailsPanelComponent(Composite parent, Database database) {
 		super(parent, SWT.DOUBLE_BUFFERED);
@@ -58,6 +61,9 @@ public class DbDetailsPanelComponent extends Composite {
 		slaveTableData.bottom = new FormAttachment(100,0);
 		slaveTable.setLayoutData(slaveTableData);
 		
+		if (metadata != null) {
+			updateDetailsTables();
+		}
 		
 	    addListener(SWT.Resize, new Listener() {
 	            public void handleEvent(Event e) {
@@ -66,9 +72,22 @@ public class DbDetailsPanelComponent extends Composite {
 	    });		
 	}
 	
+	public Database getDatabase() {
+		return database;
+	}
+
 	private void onResize () {
-	      Rectangle area = getClientArea();
-	      grpMainInfo.setBounds(0, 0, area.width, area.height);
+	    Rectangle area = getClientArea();
+	    grpMainInfo.setBounds(0, 0, area.width, area.height);
 	}	
 
+	public void updateDetails(InfoDbMetadata metadata) {
+		this.metadata = metadata;
+		updateDetailsTables();
+	}
+	
+	private void updateDetailsTables() {
+		
+	}
+		
 }

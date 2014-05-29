@@ -1,11 +1,19 @@
 package nbsp.dbcomp.ui;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
 import nbsp.dbcomp.bus.EventDispatcher;
 import nbsp.dbcomp.bus.EventHandler;
 import nbsp.dbcomp.events.DbConfigChangedEvent;
 import nbsp.dbcomp.events.DbConfigChangedEvent.Database;
+import nbsp.dbcomp.events.DbSwitchEvent;
 import nbsp.dbcomp.events.ExitEvent;
 import nbsp.dbcomp.model.DbConnectionConfigInfo;
+import nbsp.dbcomp.model.InfoDbMetadata;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
@@ -14,6 +22,7 @@ import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
@@ -28,10 +37,14 @@ public class MainDialog {
 	private Shell shell;
 	private DbConnectionConfigInfo sourceDbConfig;
 	private DbConnectionConfigInfo destinationDbConfig;
+	private List<Object> handlersList;
+	private int selectedDatabase; // 0 - authentication, 1 - characters
 	
 	public MainDialog() {
 		sourceDbConfig = new DbConnectionConfigInfo();
 		destinationDbConfig = new DbConnectionConfigInfo();
+		handlersList = new ArrayList<Object>();
+		selectedDatabase = 0;
 	}
 	
 	@EventHandler
@@ -90,6 +103,7 @@ public class MainDialog {
 		btnExit.setText("Exit");
 		FormData btnExitData = new FormData();
 		btnExitData.right = new FormAttachment(100,0);
+		btnExitData.top = new FormAttachment(0,0);
 		btnExit.setLayoutData(btnExitData);
 		btnExit.addSelectionListener( new SelectionListener() {
 			@Override
@@ -136,8 +150,9 @@ public class MainDialog {
 		sourceDbConnectionDescData.left = new FormAttachment(0, 200);
 		sourceDbConnectionDescData.top = new FormAttachment(0, 0);
 		sourceDbConnectionDesc.setLayoutData(sourceDbConnectionDescData);
-		EventDispatcher.getInstance().registerHandlers(
-				new DbDescriptionLabel(sourceDbConnectionDesc, Database.Source));
+		DbDescriptionLabelHandler sourceDescLabelHandler = new DbDescriptionLabelHandler(sourceDbConnectionDesc, Database.Source);
+		EventDispatcher.getInstance().registerHandlers(sourceDescLabelHandler);
+		handlersList.add(sourceDescLabelHandler);
 		
 		Label destinationDbConnectionDesc = new Label(grpMainBar, SWT.LEFT);
 		destinationDbConnectionDesc.setText("No connection info");
@@ -145,8 +160,25 @@ public class MainDialog {
 		destinationDbConnectionDescData.left = new FormAttachment(0, 200);
 		destinationDbConnectionDescData.top = new FormAttachment(sourceDbConnectionDesc, 10);
 		destinationDbConnectionDesc.setLayoutData(destinationDbConnectionDescData);
-		EventDispatcher.getInstance().registerHandlers(
-				new DbDescriptionLabel(destinationDbConnectionDesc, Database.Destination));
+		DbDescriptionLabelHandler destDescLabelHandler = new DbDescriptionLabelHandler(destinationDbConnectionDesc, Database.Destination);
+		EventDispatcher.getInstance().registerHandlers(destDescLabelHandler);
+		handlersList.add(destDescLabelHandler);
+		
+		Combo cboDatabase = new Combo(grpMainBar, SWT.DROP_DOWN|SWT.READ_ONLY);
+		cboDatabase.add("Authentication DB", 0);
+		cboDatabase.add("Characters DB", 1);
+		cboDatabase.select(selectedDatabase);
+		FormData cboDatabaseData = new FormData();
+		cboDatabaseData.right = new FormAttachment(btnExit, -10);
+		cboDatabaseData.top = new FormAttachment(0, 0);
+		cboDatabase.setLayoutData(cboDatabaseData);
+		
+		Label labelCboDatabase = new Label(grpMainBar, SWT.LEFT);
+		labelCboDatabase.setText("Select a database");
+		FormData labelCboDatabaseData = new FormData();
+		labelCboDatabaseData.right = new FormAttachment(cboDatabase, -10);
+		labelCboDatabaseData.top = new FormAttachment(0, 5);
+		labelCboDatabase.setLayoutData(labelCboDatabaseData);
 		
 		sourceDbConfigButton.addSelectionListener(new SelectionListener() {
 			@Override
@@ -182,6 +214,22 @@ public class MainDialog {
 			}
 		});
 		
+		cboDatabase.addSelectionListener(new SelectionListener() {
+			
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				int selection = ((Combo)e.getSource()).getSelectionIndex();
+				if (selection != selectedDatabase) {
+					selectedDatabase = selection;
+					EventDispatcher.getInstance().publish(new DbSwitchEvent());
+				}
+			}
+			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {				
+				// do nothing
+			}
+		});
 	}
 	
 	private void createDetailPanels(Composite parent) {
@@ -193,6 +241,9 @@ public class MainDialog {
 		sourcePanelData.right = new FormAttachment(50, -5);
 		sourcePanelData.bottom = new FormAttachment(100,0);
 		sourcePanel.setLayoutData(sourcePanelData);
+		DbDetailsPanelHandler sourcePanelHandler = new DbDetailsPanelHandler(sourcePanel);
+		EventDispatcher.getInstance().registerHandlers(sourcePanelHandler);
+		handlersList.add(sourcePanelHandler);
 		
 		DbDetailsPanelComponent destinationPanel = new DbDetailsPanelComponent(parent, Database.Destination);
 		FormData destinationPanelData = new FormData();
@@ -201,15 +252,18 @@ public class MainDialog {
 		destinationPanelData.right = new FormAttachment(100,0);
 		destinationPanelData.bottom = new FormAttachment(100,0);
 		destinationPanel.setLayoutData(destinationPanelData);
+		DbDetailsPanelHandler destPanelHandler = new DbDetailsPanelHandler(destinationPanel);
+		EventDispatcher.getInstance().registerHandlers(destPanelHandler);
+		handlersList.add(destPanelHandler);
 	}
 	
-	public class DbDescriptionLabel {
+	public class DbDescriptionLabelHandler {
 		
 		private String DB_CONNECT_INFO_FORMAT = "Connection to host %s:%s - user: %s"; 
 		private Label labelToUpdate;	
 		private Database database;
 		
-		public DbDescriptionLabel(Label labelToUpdate, Database database) {
+		public DbDescriptionLabelHandler(Label labelToUpdate, Database database) {
 			this.labelToUpdate = labelToUpdate;
 			this.database = database;
 		}
@@ -223,6 +277,48 @@ public class MainDialog {
 				labelToUpdate.update();
 				labelToUpdate.getParent().layout();
 			}
+		}
+	}
+	
+	public class DbDetailsPanelHandler {
+		
+		private DbDetailsPanelComponent detailsPanel;
+		
+		public DbDetailsPanelHandler(DbDetailsPanelComponent detailsPanel) {
+			this.detailsPanel = detailsPanel;
+		}
+		
+		@EventHandler
+		public void handlePanelUpdate(DbConfigChangedEvent event) {
+			if (!detailsPanel.isDisposed() && detailsPanel.getDatabase() == event.getDatabaseType()) {
+				readInfoAndUpdate();
+			}
+		}
+		
+		@EventHandler
+		public void handleDatabaseChange(DbSwitchEvent event) {
+			readInfoAndUpdate();
+		}
+		
+		private void readInfoAndUpdate() {
+			DbConnectionConfigInfo dbInfo = (detailsPanel.getDatabase() == Database.Source)? sourceDbConfig : destinationDbConfig;
+			if (dbInfo.isValidConnection()) {
+			    try {
+					Class.forName(dbInfo.getDriverName());
+					String connectionUrl = selectedDatabase == 0? dbInfo.getAuthDbConnectionUrl() : dbInfo.getCharactersDbConnectionUrl();
+					Connection connection = DriverManager.getConnection(connectionUrl, dbInfo.getUser(), dbInfo.getPass());
+					InfoDbMetadata metadata = new InfoDbMetadata();
+					metadata.readDbInfo(connection);
+					connection.close();
+					detailsPanel.updateDetails(metadata);
+				} catch (ClassNotFoundException e) {
+					// TODO
+					e.printStackTrace();
+				} catch (SQLException e) {
+					// TODO 
+					e.printStackTrace();
+				}					
+			}			
 		}
 	}
 }
