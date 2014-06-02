@@ -7,6 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mysql.jdbc.PreparedStatement;
+
 public class InfoDbMetadata {
 
 	private List<InfoTable> tables;
@@ -27,7 +29,15 @@ public class InfoDbMetadata {
 				String tbName = rsTables.getString( "TABLE_NAME" );
 				InfoTable tb = new InfoTable(tbName);
 				tables.add( tb );
-				readTableInfo(dmd, tb);				
+				readTableInfo(dmd, tb);
+				PreparedStatement ps = (PreparedStatement) connection.prepareStatement("select count(*) from "+tbName);
+				ResultSet rs = ps.executeQuery();
+				if (rs.next()) {
+					int rowCount = rs.getInt(1);
+					tb.setCount(rowCount);
+				}
+				rs.close();
+				ps.close();
 			}			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block

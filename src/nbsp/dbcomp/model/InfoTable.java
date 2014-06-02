@@ -7,6 +7,7 @@ public class InfoTable {
 
 	private String name;
 	private List<InfoColumn> columns;
+	private int count;
 	
 	public InfoTable(String name) {
 		this.name = name;
@@ -24,5 +25,12 @@ public class InfoTable {
 	public List<InfoColumn> getColumns() {
 		return columns;
 	}
-		
+
+	public int getCount() {
+		return count;
+	}
+
+	public void setCount(int count) {
+		this.count = count;
+	}
 }
