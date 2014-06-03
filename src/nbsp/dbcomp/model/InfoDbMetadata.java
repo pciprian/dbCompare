@@ -7,11 +7,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import nbsp.dbcomp.model.enums.DatabaseSelection;
+
 import com.mysql.jdbc.PreparedStatement;
 
 public class InfoDbMetadata {
 
-	private List<InfoTable> tables;
+	private DatabaseSelection selectedDatabase;
+	private List<InfoTable> tables;	
 	
 	public InfoDbMetadata() {
 		this.tables = new ArrayList<InfoTable>();
@@ -21,6 +24,14 @@ public class InfoDbMetadata {
 		return tables;
 	}
 	
+	public DatabaseSelection getSelectedDatabase() {
+		return selectedDatabase;
+	}
+
+	public void setSelectedDatabase(DatabaseSelection selectedDatabase) {
+		this.selectedDatabase = selectedDatabase;
+	}
+
 	public void readDbInfo(Connection connection) {
 		try {
 			DatabaseMetaData dmd = connection.getMetaData();

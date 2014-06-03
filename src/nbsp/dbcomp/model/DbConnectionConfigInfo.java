@@ -3,6 +3,8 @@
  */
 package nbsp.dbcomp.model;
 
+import nbsp.dbcomp.model.enums.DatabaseSelection;
+
 /**
  * @author pciprian
  *
@@ -82,11 +84,21 @@ public class DbConnectionConfigInfo {
 		return driverName;
 	}
 	
-	public String getAuthDbConnectionUrl() {
+	public String getDatabaseConnectionUrl(DatabaseSelection dbSelection) {
+		if (dbSelection == DatabaseSelection.Authentication) {
+			return getAuthDbConnectionUrl();
+		} else if (dbSelection == DatabaseSelection.Characters) {
+			return getCharactersDbConnectionUrl();
+		} else {
+			return null;
+		}
+	}
+	
+	private String getAuthDbConnectionUrl() {
 		return String.format(authConnString, host, port);
 	}
 	
-	public String getCharactersDbConnectionUrl() {
+	private String getCharactersDbConnectionUrl() {
 		return String.format(charactersConnString, host, port);
 	}
 }

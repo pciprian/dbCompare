@@ -1,12 +1,19 @@
 package nbsp.dbcomp.ui;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import nbsp.dbcomp.events.DbConfigChangedEvent.Database;
+import nbsp.dbcomp.bus.EventHandler;
+import nbsp.dbcomp.events.SlaveTableUpdateEvent;
 import nbsp.dbcomp.model.DbConnectionConfigInfo;
 import nbsp.dbcomp.model.InfoDbMetadata;
 import nbsp.dbcomp.model.InfoTable;
+import nbsp.dbcomp.model.enums.DatabaseType;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
@@ -24,16 +31,18 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
+import com.mysql.jdbc.PreparedStatement;
+
 public class DbDetailsPanelComponent extends Composite {
 	
-	private Database database;
+	private DatabaseType database;
 	private Group grpMainInfo;
 	private Table masterTable;
 	private Table slaveTable;
 	private InfoDbMetadata metadata;
 	private List<Object> handlersList;
 	
-	public DbDetailsPanelComponent(Composite parent, Database database) {
+	public DbDetailsPanelComponent(Composite parent, DatabaseType database) {
 		super(parent, SWT.DOUBLE_BUFFERED);
 		this.database = database;
 		handlersList = new ArrayList<Object>();
@@ -47,7 +56,7 @@ public class DbDetailsPanelComponent extends Composite {
 		formLayout.marginHeight = 5;
 		
 		grpMainInfo = new Group(this, SWT.SHADOW_NONE);
-		grpMainInfo.setText((database == Database.Source)?"Source database":"Destination database");
+		grpMainInfo.setText((database == DatabaseType.Source)?"Source database":"Destination database");
 		setBackground(grpMainInfo.getBackground());
 		setForeground(grpMainInfo.getForeground());
 		
@@ -104,7 +113,7 @@ public class DbDetailsPanelComponent extends Composite {
 	    });				
 	}
 	
-	public Database getDatabase() {
+	public DatabaseType getDatabase() {
 		return database;
 	}
 
@@ -169,5 +178,42 @@ public class DbDetailsPanelComponent extends Composite {
 		// TODO
 	}
 	
-	// TODO - add internal class to help with update
+	public class SlaveTableUpdateHandle {
+		
+		private DatabaseType database;
+		private Table slaveTable;
+		
+		public SlaveTableUpdateHandle(DatabaseType database, Table slaveTable) {
+			this.database = database;
+			this.slaveTable = slaveTable;
+		}
+		
+		@EventHandler
+		public void handleSlaveUpdate(SlaveTableUpdateEvent event) {
+			if (event.getDatabase() == this.database) {
+//				String connectionUrl = selectedDatabase == 0? dbInfo.getAuthDbConnectionUrl() : dbInfo.getCharactersDbConnectionUrl();
+//				try {
+//					Class.forName(dbInfo.getDriverName());
+//					
+//					Connection connection = DriverManager.getConnection(connectionUrl, dbInfo.getUser(), dbInfo.getPass());
+//					String tbName = rsTables.getString( "TABLE_NAME" );
+//					InfoTable tb = new InfoTable(tbName);
+//					tables.add( tb );
+//					readTableInfo(dmd, tb);
+//					PreparedStatement ps = (PreparedStatement) connection.prepareStatement("select count(*) from "+tbName);
+//					ResultSet rs = ps.executeQuery();
+//					if (rs.next()) {
+//						int rowCount = rs.getInt(1);
+//						tb.setCount(rowCount);
+//					}
+//					rs.close();
+//					ps.close();
+//					connection.close();
+//				} catch (SQLException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}				
+			}
+		}
+	}
 }

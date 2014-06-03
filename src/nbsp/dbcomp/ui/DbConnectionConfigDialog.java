@@ -8,6 +8,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import nbsp.dbcomp.model.DbConnectionConfigInfo;
+import nbsp.dbcomp.model.enums.DatabaseSelection;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
@@ -249,7 +250,7 @@ public class DbConnectionConfigDialog extends Dialog {
 		boolean connected = false;
 	    try {
 			Class.forName(configInfo.getDriverName());
-			Connection connection = DriverManager.getConnection(configInfo.getAuthDbConnectionUrl(), 
+			Connection connection = DriverManager.getConnection(configInfo.getDatabaseConnectionUrl(DatabaseSelection.Authentication), 
 																configInfo.getUser(), configInfo.getPass());
 			connected = true;
 			connection.close();

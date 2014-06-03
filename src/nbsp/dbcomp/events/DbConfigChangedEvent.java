@@ -1,18 +1,15 @@
 package nbsp.dbcomp.events;
 
+import nbsp.dbcomp.model.enums.DatabaseType;
+
 public class DbConfigChangedEvent implements Event {
-	public enum Database {
-		Source,
-		Destination;
-	}
+	private DatabaseType dbType;
 	
-	private Database dbType;
-	
-	public DbConfigChangedEvent(Database dbType) {
+	public DbConfigChangedEvent(DatabaseType dbType) {
 		this.dbType = dbType;
 	}
 	
-	public Database getDatabaseType() {
+	public DatabaseType getDatabaseType() {
 		return dbType;
 	}
 }

@@ -9,11 +9,12 @@ import java.util.List;
 import nbsp.dbcomp.bus.EventDispatcher;
 import nbsp.dbcomp.bus.EventHandler;
 import nbsp.dbcomp.events.DbConfigChangedEvent;
-import nbsp.dbcomp.events.DbConfigChangedEvent.Database;
 import nbsp.dbcomp.events.DbSwitchEvent;
 import nbsp.dbcomp.events.ExitEvent;
 import nbsp.dbcomp.model.DbConnectionConfigInfo;
 import nbsp.dbcomp.model.InfoDbMetadata;
+import nbsp.dbcomp.model.enums.DatabaseSelection;
+import nbsp.dbcomp.model.enums.DatabaseType;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
@@ -38,13 +39,13 @@ public class MainDialog {
 	private DbConnectionConfigInfo sourceDbConfig;
 	private DbConnectionConfigInfo destinationDbConfig;
 	private List<Object> handlersList;
-	private int selectedDatabase; // 0 - authentication, 1 - characters
+	private DatabaseSelection selectedDatabase; 
 	
 	public MainDialog() {
 		sourceDbConfig = new DbConnectionConfigInfo();
 		destinationDbConfig = new DbConnectionConfigInfo();
 		handlersList = new ArrayList<Object>();
-		selectedDatabase = 0;
+		selectedDatabase = DatabaseSelection.Authentication;
 	}
 	
 	@EventHandler
@@ -150,7 +151,7 @@ public class MainDialog {
 		sourceDbConnectionDescData.left = new FormAttachment(0, 200);
 		sourceDbConnectionDescData.top = new FormAttachment(0, 0);
 		sourceDbConnectionDesc.setLayoutData(sourceDbConnectionDescData);
-		DbDescriptionLabelHandler sourceDescLabelHandler = new DbDescriptionLabelHandler(sourceDbConnectionDesc, Database.Source);
+		DbDescriptionLabelHandler sourceDescLabelHandler = new DbDescriptionLabelHandler(sourceDbConnectionDesc, DatabaseType.Source);
 		EventDispatcher.getInstance().registerHandlers(sourceDescLabelHandler);
 		handlersList.add(sourceDescLabelHandler);
 		
@@ -160,14 +161,14 @@ public class MainDialog {
 		destinationDbConnectionDescData.left = new FormAttachment(0, 200);
 		destinationDbConnectionDescData.top = new FormAttachment(sourceDbConnectionDesc, 10);
 		destinationDbConnectionDesc.setLayoutData(destinationDbConnectionDescData);
-		DbDescriptionLabelHandler destDescLabelHandler = new DbDescriptionLabelHandler(destinationDbConnectionDesc, Database.Destination);
+		DbDescriptionLabelHandler destDescLabelHandler = new DbDescriptionLabelHandler(destinationDbConnectionDesc, DatabaseType.Destination);
 		EventDispatcher.getInstance().registerHandlers(destDescLabelHandler);
 		handlersList.add(destDescLabelHandler);
 		
 		Combo cboDatabase = new Combo(grpMainBar, SWT.DROP_DOWN|SWT.READ_ONLY);
 		cboDatabase.add("Authentication DB", 0);
 		cboDatabase.add("Characters DB", 1);
-		cboDatabase.select(selectedDatabase);
+		cboDatabase.select(selectedDatabase.indexValue());
 		FormData cboDatabaseData = new FormData();
 		cboDatabaseData.right = new FormAttachment(btnExit, -10);
 		cboDatabaseData.top = new FormAttachment(0, 0);
@@ -188,7 +189,7 @@ public class MainDialog {
 				sDialog.show();
 				if (sDialog.hasChanged()) {
 					sourceDbConfig = sDialog.getConfigInfo();
-					EventDispatcher.getInstance().publish(new DbConfigChangedEvent(Database.Source));
+					EventDispatcher.getInstance().publish(new DbConfigChangedEvent(DatabaseType.Source));
 				}
 			}			
 			@Override
@@ -205,7 +206,7 @@ public class MainDialog {
 				dDialog.show();
 				if (dDialog.hasChanged()) {
 					destinationDbConfig = dDialog.getConfigInfo();
-					EventDispatcher.getInstance().publish(new DbConfigChangedEvent(Database.Destination));
+					EventDispatcher.getInstance().publish(new DbConfigChangedEvent(DatabaseType.Destination));
 				}
 			}			
 			@Override
@@ -219,8 +220,8 @@ public class MainDialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				int selection = ((Combo)e.getSource()).getSelectionIndex();
-				if (selection != selectedDatabase) {
-					selectedDatabase = selection;
+				if (selection != selectedDatabase.indexValue()) {
+					selectedDatabase = DatabaseSelection.fromIndexValue(selection);
 					EventDispatcher.getInstance().publish(new DbSwitchEvent());
 				}
 			}
@@ -234,7 +235,7 @@ public class MainDialog {
 	
 	private void createDetailPanels(Composite parent) {
 		
-		DbDetailsPanelComponent sourcePanel = new DbDetailsPanelComponent(parent, Database.Source);
+		DbDetailsPanelComponent sourcePanel = new DbDetailsPanelComponent(parent, DatabaseType.Source);
 		FormData sourcePanelData = new FormData();
 		sourcePanelData.top = new FormAttachment(0, 80);
 		sourcePanelData.left = new FormAttachment(0, 0);
@@ -245,7 +246,7 @@ public class MainDialog {
 		EventDispatcher.getInstance().registerHandlers(sourcePanelHandler);
 		handlersList.add(sourcePanelHandler);
 		
-		DbDetailsPanelComponent destinationPanel = new DbDetailsPanelComponent(parent, Database.Destination);
+		DbDetailsPanelComponent destinationPanel = new DbDetailsPanelComponent(parent, DatabaseType.Destination);
 		FormData destinationPanelData = new FormData();
 		destinationPanelData.top = new FormAttachment(0, 80);
 		destinationPanelData.left = new FormAttachment(50, 5);
@@ -261,9 +262,9 @@ public class MainDialog {
 		
 		private String DB_CONNECT_INFO_FORMAT = "Connection to host %s:%s - user: %s"; 
 		private Label labelToUpdate;	
-		private Database database;
+		private DatabaseType database;
 		
-		public DbDescriptionLabelHandler(Label labelToUpdate, Database database) {
+		public DbDescriptionLabelHandler(Label labelToUpdate, DatabaseType database) {
 			this.labelToUpdate = labelToUpdate;
 			this.database = database;
 		}
@@ -271,7 +272,7 @@ public class MainDialog {
 		@EventHandler
 		public void handleLabelUpdate(DbConfigChangedEvent event) {
 			if (!labelToUpdate.isDisposed() && database == event.getDatabaseType()) {
-				DbConnectionConfigInfo dbInfo = (event.getDatabaseType() == Database.Source)? sourceDbConfig : destinationDbConfig;
+				DbConnectionConfigInfo dbInfo = (event.getDatabaseType() == DatabaseType.Source)? sourceDbConfig : destinationDbConfig;
 				labelToUpdate.setText(String.format(DB_CONNECT_INFO_FORMAT, dbInfo.getHost(), dbInfo.getPort(), dbInfo.getUser()));
 				labelToUpdate.redraw();
 				labelToUpdate.update();
@@ -301,11 +302,11 @@ public class MainDialog {
 		}
 		
 		private void readInfoAndUpdate() {
-			DbConnectionConfigInfo dbInfo = (detailsPanel.getDatabase() == Database.Source)? sourceDbConfig : destinationDbConfig;
+			DbConnectionConfigInfo dbInfo = (detailsPanel.getDatabase() == DatabaseType.Source)? sourceDbConfig : destinationDbConfig;
 			if (dbInfo.isValidConnection()) {
 			    try {
 					Class.forName(dbInfo.getDriverName());
-					String connectionUrl = selectedDatabase == 0? dbInfo.getAuthDbConnectionUrl() : dbInfo.getCharactersDbConnectionUrl();
+					String connectionUrl = dbInfo.getDatabaseConnectionUrl(selectedDatabase);
 					Connection connection = DriverManager.getConnection(connectionUrl, dbInfo.getUser(), dbInfo.getPass());
 					InfoDbMetadata metadata = new InfoDbMetadata();
 					metadata.readDbInfo(connection);
