@@ -2,6 +2,7 @@ package nbsp.dbcomp.model;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -13,15 +14,21 @@ import com.mysql.jdbc.PreparedStatement;
 
 public class InfoDbMetadata {
 
+	private DbConnectionConfigInfo connectionInfo;
 	private DatabaseSelection selectedDatabase;
 	private List<InfoTable> tables;	
 	
-	public InfoDbMetadata() {
+	public InfoDbMetadata(DbConnectionConfigInfo connectionInfo) {
+		this.connectionInfo = connectionInfo;
 		this.tables = new ArrayList<InfoTable>();
 	}
 
 	public List<InfoTable> getTables() {
 		return tables;
+	}
+	
+	public DbConnectionConfigInfo getConnectionInfo() {
+		return connectionInfo;
 	}
 	
 	public DatabaseSelection getSelectedDatabase() {
@@ -32,8 +39,18 @@ public class InfoDbMetadata {
 		this.selectedDatabase = selectedDatabase;
 	}
 
-	public void readDbInfo(Connection connection) {
+	public void readDbInfo() {
+		if (!connectionInfo.isValidConnection()) {
+			return;
+		}
+		if (selectedDatabase == null) {
+			return;
+		}
+		
 		try {
+			Class.forName(connectionInfo.getDriverName());
+			String connectionUrl = connectionInfo.getDatabaseConnectionUrl(selectedDatabase);
+			Connection connection = DriverManager.getConnection(connectionUrl, connectionInfo.getUser(), connectionInfo.getPass());			
 			DatabaseMetaData dmd = connection.getMetaData();
 			ResultSet rsTables = dmd.getTables(null, null, "%", new String[] { "TABLE" } );
 			while( rsTables.next() ) {
@@ -49,8 +66,12 @@ public class InfoDbMetadata {
 				}
 				rs.close();
 				ps.close();
-			}			
+			}	
+			connection.close();
 		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

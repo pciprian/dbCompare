@@ -291,7 +291,7 @@ public class MainDialog {
 		
 		@EventHandler
 		public void handlePanelUpdate(DbConfigChangedEvent event) {
-			if (!detailsPanel.isDisposed() && detailsPanel.getDatabase() == event.getDatabaseType()) {
+			if (!detailsPanel.isDisposed() && detailsPanel.getDatabaseType() == event.getDatabaseType()) {
 				readInfoAndUpdate();
 			}
 		}
@@ -302,23 +302,12 @@ public class MainDialog {
 		}
 		
 		private void readInfoAndUpdate() {
-			DbConnectionConfigInfo dbInfo = (detailsPanel.getDatabase() == DatabaseType.Source)? sourceDbConfig : destinationDbConfig;
+			DbConnectionConfigInfo dbInfo = (detailsPanel.getDatabaseType() == DatabaseType.Source)? sourceDbConfig : destinationDbConfig;
 			if (dbInfo.isValidConnection()) {
-			    try {
-					Class.forName(dbInfo.getDriverName());
-					String connectionUrl = dbInfo.getDatabaseConnectionUrl(selectedDatabase);
-					Connection connection = DriverManager.getConnection(connectionUrl, dbInfo.getUser(), dbInfo.getPass());
-					InfoDbMetadata metadata = new InfoDbMetadata();
-					metadata.readDbInfo(connection);
-					connection.close();
-					detailsPanel.updateDetails(metadata);
-				} catch (ClassNotFoundException e) {
-					// TODO
-					e.printStackTrace();
-				} catch (SQLException e) {
-					// TODO 
-					e.printStackTrace();
-				}					
+				InfoDbMetadata metadata = new InfoDbMetadata(dbInfo);
+				metadata.setSelectedDatabase(selectedDatabase);
+				metadata.readDbInfo();
+				detailsPanel.updateDetails(metadata);
 			}			
 		}
 	}

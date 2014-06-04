@@ -8,11 +8,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import nbsp.dbcomp.bus.EventDispatcher;
 import nbsp.dbcomp.bus.EventHandler;
 import nbsp.dbcomp.events.SlaveTableUpdateEvent;
 import nbsp.dbcomp.model.DbConnectionConfigInfo;
+import nbsp.dbcomp.model.InfoColumn;
 import nbsp.dbcomp.model.InfoDbMetadata;
 import nbsp.dbcomp.model.InfoTable;
+import nbsp.dbcomp.model.enums.DatabaseSelection;
 import nbsp.dbcomp.model.enums.DatabaseType;
 
 import org.eclipse.swt.SWT;
@@ -35,16 +38,16 @@ import com.mysql.jdbc.PreparedStatement;
 
 public class DbDetailsPanelComponent extends Composite {
 	
-	private DatabaseType database;
+	private DatabaseType databaseType;
 	private Group grpMainInfo;
 	private Table masterTable;
 	private Table slaveTable;
 	private InfoDbMetadata metadata;
 	private List<Object> handlersList;
 	
-	public DbDetailsPanelComponent(Composite parent, DatabaseType database) {
+	public DbDetailsPanelComponent(Composite parent, DatabaseType databaseType) {
 		super(parent, SWT.DOUBLE_BUFFERED);
-		this.database = database;
+		this.databaseType = databaseType;
 		handlersList = new ArrayList<Object>();
 	
 		createControls();
@@ -56,7 +59,7 @@ public class DbDetailsPanelComponent extends Composite {
 		formLayout.marginHeight = 5;
 		
 		grpMainInfo = new Group(this, SWT.SHADOW_NONE);
-		grpMainInfo.setText((database == DatabaseType.Source)?"Source database":"Destination database");
+		grpMainInfo.setText((databaseType == DatabaseType.Source)?"Source database":"Destination database");
 		setBackground(grpMainInfo.getBackground());
 		setForeground(grpMainInfo.getForeground());
 		
@@ -84,6 +87,10 @@ public class DbDetailsPanelComponent extends Composite {
 		slaveTableData.bottom = new FormAttachment(100,0);
 		slaveTable.setLayoutData(slaveTableData);
 		
+		SlaveTableUpdateHandle panelHandle = new SlaveTableUpdateHandle(this);
+		this.handlersList.add(panelHandle);
+		EventDispatcher.getInstance().registerHandlers(panelHandle);
+		
 		masterTable.addSelectionListener(new SelectionListener() {			
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -92,7 +99,8 @@ public class DbDetailsPanelComponent extends Composite {
 				if (indexSelected != -1) {
 					TableItem row = master.getItem(indexSelected);
 					String tableName = row.getText(0);
-					// TODO ... call an update event here
+					SlaveTableUpdateEvent event = new SlaveTableUpdateEvent(tableName, databaseType);
+					EventDispatcher.getInstance().publish(event);
 				}
 			}
 			
@@ -107,14 +115,34 @@ public class DbDetailsPanelComponent extends Composite {
 		}
 		
 	    addListener(SWT.Resize, new Listener() {
-	            public void handleEvent(Event e) {
-	                  onResize();
-	            }
-	    });				
+	    	@Override
+            public void handleEvent(Event e) {
+            	onResize();
+	        }
+	    });
+	    
+	    addListener(SWT.Dispose, new Listener() {			
+			@Override
+			public void handleEvent(Event event) {
+				onDispose();
+			}
+		});
 	}
 	
-	public DatabaseType getDatabase() {
-		return database;
+	public DatabaseType getDatabaseType() {
+		return databaseType;
+	}
+	
+	public InfoDbMetadata getMetadata() {
+		return metadata;
+	}
+	
+	public Table getMasterTable() {
+		return masterTable;
+	}
+	
+	public Table getSlaveTable() {
+		return slaveTable;
 	}
 
 	private void onResize () {
@@ -127,7 +155,11 @@ public class DbDetailsPanelComponent extends Composite {
 	    	masterTable.getColumn(0).setWidth(firstColumnWidth);
 	    	masterTable.getColumn(1).setWidth(secondColumnWidth);
 	    }
-	}	
+	}
+	
+	private void onDispose() {
+		
+	}
 
 	public void updateDetails(InfoDbMetadata metadata) {
 		this.metadata = metadata;
@@ -140,9 +172,13 @@ public class DbDetailsPanelComponent extends Composite {
 		}
 		
 		if (!masterTable.isDisposed()) {
-			masterTable.clearAll();
+			masterTable.removeAll();
 			masterTable.setLinesVisible(true);
 			masterTable.setHeaderVisible(true);
+			while ( masterTable.getColumnCount() > 0 ) {
+				masterTable.getColumns()[ 0 ].dispose();
+			}
+			
 	    	int availableWidth = masterTable.getClientArea().width;
 	    	int firstColumnWidth = availableWidth * 2 / 3;
 	    	int secondColumnWidth = availableWidth - firstColumnWidth - 1;
@@ -174,45 +210,78 @@ public class DbDetailsPanelComponent extends Composite {
 		}
 	}
 	
-	private void loadSlaveTableData(String tableName) {
-		// TODO
-	}
-	
 	public class SlaveTableUpdateHandle {
 		
-		private DatabaseType database;
-		private Table slaveTable;
+		private DbDetailsPanelComponent panel;
 		
-		public SlaveTableUpdateHandle(DatabaseType database, Table slaveTable) {
-			this.database = database;
-			this.slaveTable = slaveTable;
+		public SlaveTableUpdateHandle(DbDetailsPanelComponent panel) {
+			this.panel = panel;
 		}
 		
 		@EventHandler
 		public void handleSlaveUpdate(SlaveTableUpdateEvent event) {
-			if (event.getDatabase() == this.database) {
-//				String connectionUrl = selectedDatabase == 0? dbInfo.getAuthDbConnectionUrl() : dbInfo.getCharactersDbConnectionUrl();
-//				try {
-//					Class.forName(dbInfo.getDriverName());
-//					
-//					Connection connection = DriverManager.getConnection(connectionUrl, dbInfo.getUser(), dbInfo.getPass());
-//					String tbName = rsTables.getString( "TABLE_NAME" );
-//					InfoTable tb = new InfoTable(tbName);
-//					tables.add( tb );
-//					readTableInfo(dmd, tb);
-//					PreparedStatement ps = (PreparedStatement) connection.prepareStatement("select count(*) from "+tbName);
-//					ResultSet rs = ps.executeQuery();
-//					if (rs.next()) {
-//						int rowCount = rs.getInt(1);
-//						tb.setCount(rowCount);
-//					}
-//					rs.close();
-//					ps.close();
-//					connection.close();
-//				} catch (SQLException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}				
+			if (event.getDatabase() == this.panel.getDatabaseType()) {
+				Table localTable = this.panel.getSlaveTable();
+				localTable.removeAll();
+				localTable.setLinesVisible(true);
+				localTable.setHeaderVisible(true);
+				while ( localTable.getColumnCount() > 0 ) {
+					localTable.getColumns()[ 0 ].dispose();
+				}				
+				
+				InfoDbMetadata localMetadata = this.panel.getMetadata();
+				InfoTable localInfoTable = null;
+				for (InfoTable it : localMetadata.getTables()) {
+					if (it.getName().equalsIgnoreCase(event.getTableName())) {
+						localInfoTable = it;
+					}
+				}
+				if (localInfoTable == null) {
+					return;
+				}
+				int availableWidth = localTable.getClientArea().width;
+				int columnWidth = availableWidth / localInfoTable.getColumns().size();
+				if (columnWidth < 100) {
+					columnWidth = 100;
+				}
+				for (InfoColumn ic : localInfoTable.getColumns()) {
+					TableColumn column = new TableColumn(localTable, SWT.LEFT);
+					column.setText(ic.getName());
+					column.setWidth(columnWidth);
+				}
+				
+				String connectionUrl = localMetadata.getConnectionInfo().getDatabaseConnectionUrl(localMetadata.getSelectedDatabase());
+				try {
+					Class.forName(localMetadata.getConnectionInfo().getDriverName());
+					
+					Connection connection = DriverManager.getConnection(connectionUrl,
+																		localMetadata.getConnectionInfo().getUser(),
+																		localMetadata.getConnectionInfo().getPass());
+
+					PreparedStatement ps = (PreparedStatement) connection.prepareStatement("select * from "+event.getTableName());
+					ResultSet rs = ps.executeQuery();
+					while (rs.next()) {
+						TableItem item = new TableItem(localTable, SWT.NONE);
+						int position = 0;
+						for (TableColumn tc : localTable.getColumns()) {
+							String value = rs.getString(tc.getText());
+							if (value == null) {
+								value = "";
+							}
+							item.setText(position, value);
+							position++;
+						}						
+					}
+					rs.close();
+					ps.close();
+					connection.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}				
 			}
 		}
 	}
